@@ -1,0 +1,1 @@
+namespace HotelManagement.Infrastructure.Pdf; public sealed class InvoicePdfGenerator{public byte[] Generate(string invoiceNumber,string guestName,decimal total,decimal paid)=>SimplePdfWriter.Create("Hotel Management Invoice",$"Invoice: {invoiceNumber}",$"Guest: {guestName}",$"Total: {total:0.00}",$"Paid: {paid:0.00}",$"Balance: {total-paid:0.00}");}

@@ -1,0 +1,659 @@
+HotelManagement/
+├── docs/
+│   ├── api/
+│   │   ├── .gitkeep
+│   │   └── ENDPOINTS.md
+│   ├── architecture/
+│   │   ├── .gitkeep
+│   │   └── SECURITY.md
+│   ├── database/
+│   │   ├── .gitkeep
+│   │   └── MODULES.md
+│   └── diagrams/
+│       └── FLOW.md
+├── Properties/
+│   └── launchSettings.json
+├── scripts/
+│   ├── Create-Migration.ps1
+│   ├── Drop-Database.ps1
+│   ├── Remove-LastMigration.ps1
+│   ├── Reset-Database.ps1
+│   ├── Run.ps1
+│   ├── Seed-Database.ps1
+│   └── Update-Database.ps1
+├── src/
+│   ├── Api/
+│   │   ├── Controllers/
+│   │   │   └── V1/
+│   │   │       ├── AmenitiesController.cs
+│   │   │       ├── AttendanceController.cs
+│   │   │       ├── AuditLogsController.cs
+│   │   │       ├── AuthController.cs
+│   │   │       ├── AvailabilityController.cs
+│   │   │       ├── BranchesController.cs
+│   │   │       ├── BuildingsController.cs
+│   │   │       ├── CheckInsController.cs
+│   │   │       ├── CheckOutsController.cs
+│   │   │       ├── ComplaintsController.cs
+│   │   │       ├── DashboardController.cs
+│   │   │       ├── DepartmentsController.cs
+│   │   │       ├── DepositsController.cs
+│   │   │       ├── DiscountsController.cs
+│   │   │       ├── EmployeesController.cs
+│   │   │       ├── FeatureFlagsController.cs
+│   │   │       ├── FloorsController.cs
+│   │   │       ├── FoliosController.cs
+│   │   │       ├── GoodsReceiptsController.cs
+│   │   │       ├── GuestDocumentsController.cs
+│   │   │       ├── GuestRequestsController.cs
+│   │   │       ├── GuestsController.cs
+│   │   │       ├── HotelsController.cs
+│   │   │       ├── HousekeepingController.cs
+│   │   │       ├── InventoryController.cs
+│   │   │       ├── InvoicesController.cs
+│   │   │       ├── LaundryController.cs
+│   │   │       ├── LeaveRequestsController.cs
+│   │   │       ├── LostAndFoundController.cs
+│   │   │       ├── MaintenanceController.cs
+│   │   │       ├── MasterDataController.cs
+│   │   │       ├── MeterReadingsController.cs
+│   │   │       ├── NotificationsController.cs
+│   │   │       ├── PaymentsController.cs
+│   │   │       ├── PermissionsController.cs
+│   │   │       ├── PositionsController.cs
+│   │   │       ├── ProfileController.cs
+│   │   │       ├── PurchaseOrdersController.cs
+│   │   │       ├── PurchaseRequestsController.cs
+│   │   │       ├── RatesController.cs
+│   │   │       ├── RefundsController.cs
+│   │   │       ├── ReportsController.cs
+│   │   │       ├── ReservationsController.cs
+│   │   │       ├── RestaurantController.cs
+│   │   │       ├── RolesController.cs
+│   │   │       ├── RoomAssignmentsController.cs
+│   │   │       ├── RoomChangesController.cs
+│   │   │       ├── RoomInspectionsController.cs
+│   │   │       ├── RoomsController.cs
+│   │   │       ├── RoomTypesController.cs
+│   │   │       ├── SecurityIncidentsController.cs
+│   │   │       ├── ServicesController.cs
+│   │   │       ├── SettingsController.cs
+│   │   │       ├── ShiftsController.cs
+│   │   │       ├── StayExtensionsController.cs
+│   │   │       ├── StockTransactionsController.cs
+│   │   │       ├── SuppliersController.cs
+│   │   │       ├── TaxesController.cs
+│   │   │       ├── TransportationController.cs
+│   │   │       ├── UsersController.cs
+│   │   │       ├── UtilitiesController.cs
+│   │   │       ├── UtilityMetersController.cs
+│   │   │       ├── UtilityRatesController.cs
+│   │   │       └── WarehousesController.cs
+│   │   ├── Extensions/
+│   │   │   └── HttpContextExtensions.cs
+│   │   ├── Filters/
+│   │   │   └── ApiFilterMarker.cs
+│   │   ├── HealthChecks/
+│   │   │   ├── .gitkeep
+│   │   │   └── DatabaseHealthCheck.cs
+│   │   ├── Hubs/
+│   │   │   ├── FrontDeskHub.cs
+│   │   │   ├── HousekeepingHub.cs
+│   │   │   ├── MaintenanceHub.cs
+│   │   │   └── NotificationHub.cs
+│   │   ├── Middleware/
+│   │   │   ├── BranchContextMiddleware.cs
+│   │   │   ├── CorrelationIdMiddleware.cs
+│   │   │   ├── ExceptionHandlingMiddleware.cs
+│   │   │   ├── HotelContextMiddleware.cs
+│   │   │   ├── RequestLoggingMiddleware.cs
+│   │   │   └── SecurityHeadersMiddleware.cs
+│   │   ├── OpenApi/
+│   │   │   └── SwaggerConfiguration.cs
+│   │   └── DependencyInjection.cs
+│   ├── Application/
+│   │   ├── Abstractions/
+│   │   │   ├── Authentication/
+│   │   │   │   ├── IJwtTokenService.cs
+│   │   │   │   ├── IPasswordService.cs
+│   │   │   │   └── IRefreshTokenService.cs
+│   │   │   ├── Authorization/
+│   │   │   │   └── IPermissionService.cs
+│   │   │   ├── Caching/
+│   │   │   │   └── ICacheService.cs
+│   │   │   ├── DateTime/
+│   │   │   │   └── IClock.cs
+│   │   │   ├── Email/
+│   │   │   │   └── IEmailSender.cs
+│   │   │   ├── FileStorage/
+│   │   │   │   └── IFileStorage.cs
+│   │   │   ├── Notifications/
+│   │   │   │   └── INotificationPublisher.cs
+│   │   │   ├── Payments/
+│   │   │   │   └── IPaymentGateway.cs
+│   │   │   ├── Persistence/
+│   │   │   │   └── IApplicationDbContext.cs
+│   │   │   ├── Security/
+│   │   │   │   └── ICurrentUser.cs
+│   │   │   └── Sms/
+│   │   │       └── ISmsSender.cs
+│   │   ├── Common/
+│   │   │   ├── Exceptions/
+│   │   │   │   ├── ConflictException.cs
+│   │   │   │   ├── ForbiddenException.cs
+│   │   │   │   ├── NotFoundException.cs
+│   │   │   │   └── UnauthorizedException.cs
+│   │   │   ├── Models/
+│   │   │   │   ├── ApiResponse.cs
+│   │   │   │   ├── CatalogContracts.cs
+│   │   │   │   └── OperationalContracts.cs
+│   │   │   ├── Pagination/
+│   │   │   │   └── PagedResult.cs
+│   │   │   ├── Results/
+│   │   │   │   └── Result.cs
+│   │   │   ├── Security/
+│   │   │   │   └── CurrentUserExtensions.cs
+│   │   │   ├── Services/
+│   │   │   │   ├── CatalogCrudService.cs
+│   │   │   │   └── OperationalCrudService.cs
+│   │   │   └── Validation/
+│   │   │       └── ValidationHelper.cs
+│   │   ├── Features/
+│   │   │   ├── Amenities/
+│   │   │   │   ├── AmenitiesService.cs
+│   │   │   │   └── README.md
+│   │   │   ├── Attendance/
+│   │   │   │   └── AttendanceService.cs
+│   │   │   ├── AuditLogs/
+│   │   │   │   ├── AuditLogService.cs
+│   │   │   │   └── AuditLogsFeature.cs
+│   │   │   ├── Authentication/
+│   │   │   │   ├── Contracts/
+│   │   │   │   │   └── AuthContracts.cs
+│   │   │   │   └── Services/
+│   │   │   │       └── AuthService.cs
+│   │   │   ├── Availability/
+│   │   │   │   ├── AvailabilityFeature.cs
+│   │   │   │   └── AvailabilityService.cs
+│   │   │   ├── Branches/
+│   │   │   │   ├── BranchesFeature.cs
+│   │   │   │   └── BranchesService.cs
+│   │   │   ├── Buildings/
+│   │   │   │   ├── BuildingsService.cs
+│   │   │   │   └── README.md
+│   │   │   ├── CheckIns/
+│   │   │   │   ├── CheckInService.cs
+│   │   │   │   └── CheckInsFeature.cs
+│   │   │   ├── CheckOuts/
+│   │   │   │   ├── CheckOutService.cs
+│   │   │   │   └── CheckOutsFeature.cs
+│   │   │   ├── Complaints/
+│   │   │   │   └── ComplaintsService.cs
+│   │   │   ├── Dashboard/
+│   │   │   │   └── Services/
+│   │   │   │       └── DashboardService.cs
+│   │   │   ├── Departments/
+│   │   │   │   ├── DepartmentsService.cs
+│   │   │   │   └── README.md
+│   │   │   ├── Deposits/
+│   │   │   │   └── DepositsService.cs
+│   │   │   ├── Discounts/
+│   │   │   │   ├── DiscountsService.cs
+│   │   │   │   └── README.md
+│   │   │   ├── Employees/
+│   │   │   │   ├── EmployeeService.cs
+│   │   │   │   └── EmployeesFeature.cs
+│   │   │   ├── FeatureFlags/
+│   │   │   │   ├── FeatureFlagsService.cs
+│   │   │   │   └── README.md
+│   │   │   ├── Floors/
+│   │   │   │   ├── FloorsService.cs
+│   │   │   │   └── README.md
+│   │   │   ├── Folios/
+│   │   │   │   ├── FolioService.cs
+│   │   │   │   └── FoliosFeature.cs
+│   │   │   ├── GoodsReceipts/
+│   │   │   │   └── GoodsReceiptsService.cs
+│   │   │   ├── GuestDocuments/
+│   │   │   │   └── GuestDocumentsService.cs
+│   │   │   ├── GuestRequests/
+│   │   │   │   └── GuestRequestsService.cs
+│   │   │   ├── Guests/
+│   │   │   │   ├── Contracts/
+│   │   │   │   │   └── GuestContracts.cs
+│   │   │   │   └── Services/
+│   │   │   │       └── GuestService.cs
+│   │   │   ├── GuestServices/
+│   │   │   │   ├── GuestServicesService.cs
+│   │   │   │   └── README.md
+│   │   │   ├── Hotels/
+│   │   │   │   ├── HotelsFeature.cs
+│   │   │   │   └── HotelsService.cs
+│   │   │   ├── Housekeeping/
+│   │   │   │   ├── Contracts/
+│   │   │   │   │   └── HousekeepingContracts.cs
+│   │   │   │   └── Services/
+│   │   │   │       └── HousekeepingService.cs
+│   │   │   ├── Inventory/
+│   │   │   │   ├── InventoryFeature.cs
+│   │   │   │   └── InventoryService.cs
+│   │   │   ├── Invoices/
+│   │   │   │   ├── Contracts/
+│   │   │   │   │   └── InvoiceContracts.cs
+│   │   │   │   └── Services/
+│   │   │   │       └── InvoiceService.cs
+│   │   │   ├── Laundry/
+│   │   │   │   └── LaundryService.cs
+│   │   │   ├── LeaveRequests/
+│   │   │   │   └── LeaveRequestsService.cs
+│   │   │   ├── LostAndFound/
+│   │   │   │   └── LostAndFoundService.cs
+│   │   │   ├── Maintenance/
+│   │   │   │   ├── Contracts/
+│   │   │   │   │   └── MaintenanceContracts.cs
+│   │   │   │   └── Services/
+│   │   │   │       └── MaintenanceService.cs
+│   │   │   ├── MasterData/
+│   │   │   │   └── Services/
+│   │   │   │       └── MasterDataService.cs
+│   │   │   ├── MeterReadings/
+│   │   │   │   ├── MeterReadingsFeature.cs
+│   │   │   │   └── MeterReadingsService.cs
+│   │   │   ├── Notifications/
+│   │   │   │   ├── NotificationsFeature.cs
+│   │   │   │   └── NotificationsService.cs
+│   │   │   ├── Payments/
+│   │   │   │   ├── PaymentService.cs
+│   │   │   │   └── PaymentsFeature.cs
+│   │   │   ├── Permissions/
+│   │   │   │   ├── PermissionsFeature.cs
+│   │   │   │   └── PermissionsService.cs
+│   │   │   ├── Positions/
+│   │   │   │   ├── PositionsService.cs
+│   │   │   │   └── README.md
+│   │   │   ├── Profile/
+│   │   │   │   └── Services/
+│   │   │   │       └── ProfileService.cs
+│   │   │   ├── PurchaseOrders/
+│   │   │   │   └── PurchaseOrdersService.cs
+│   │   │   ├── PurchaseRequests/
+│   │   │   │   └── PurchaseRequestsService.cs
+│   │   │   ├── Rates/
+│   │   │   │   ├── RatesService.cs
+│   │   │   │   └── README.md
+│   │   │   ├── Refunds/
+│   │   │   │   └── RefundsService.cs
+│   │   │   ├── Reports/
+│   │   │   │   ├── ReportsFeature.cs
+│   │   │   │   └── ReportsService.cs
+│   │   │   ├── Reservations/
+│   │   │   │   ├── Contracts/
+│   │   │   │   │   └── ReservationContracts.cs
+│   │   │   │   └── Services/
+│   │   │   │       └── ReservationService.cs
+│   │   │   ├── Restaurant/
+│   │   │   │   ├── RestaurantFeature.cs
+│   │   │   │   └── RestaurantService.cs
+│   │   │   ├── Roles/
+│   │   │   │   ├── RolesFeature.cs
+│   │   │   │   └── RolesService.cs
+│   │   │   ├── RoomAssignments/
+│   │   │   │   └── RoomAssignmentsService.cs
+│   │   │   ├── RoomChanges/
+│   │   │   │   └── RoomChangesService.cs
+│   │   │   ├── RoomInspections/
+│   │   │   │   └── RoomInspectionsService.cs
+│   │   │   ├── Rooms/
+│   │   │   │   ├── Contracts/
+│   │   │   │   │   └── RoomContracts.cs
+│   │   │   │   └── Services/
+│   │   │   │       └── RoomService.cs
+│   │   │   ├── RoomTypes/
+│   │   │   │   ├── RoomTypesFeature.cs
+│   │   │   │   └── RoomTypesService.cs
+│   │   │   ├── SecurityIncidents/
+│   │   │   │   └── SecurityIncidentsService.cs
+│   │   │   ├── Settings/
+│   │   │   │   ├── README.md
+│   │   │   │   └── SettingsService.cs
+│   │   │   ├── Shifts/
+│   │   │   │   ├── README.md
+│   │   │   │   └── ShiftsService.cs
+│   │   │   ├── StayExtensions/
+│   │   │   │   └── StayExtensionsService.cs
+│   │   │   ├── StockTransactions/
+│   │   │   │   └── StockTransactionsService.cs
+│   │   │   ├── Suppliers/
+│   │   │   │   ├── README.md
+│   │   │   │   └── SuppliersService.cs
+│   │   │   ├── Taxes/
+│   │   │   │   ├── README.md
+│   │   │   │   └── TaxesService.cs
+│   │   │   ├── Transportation/
+│   │   │   │   └── TransportationService.cs
+│   │   │   ├── Users/
+│   │   │   │   ├── Contracts/
+│   │   │   │   │   └── UserContracts.cs
+│   │   │   │   └── Services/
+│   │   │   │       └── UserAdminService.cs
+│   │   │   ├── Utilities/
+│   │   │   │   ├── Contracts/
+│   │   │   │   │   └── UtilityContracts.cs
+│   │   │   │   └── Services/
+│   │   │   │       └── UtilityService.cs
+│   │   │   ├── UtilityMeters/
+│   │   │   │   ├── UtilityMetersFeature.cs
+│   │   │   │   └── UtilityMetersService.cs
+│   │   │   ├── UtilityRates/
+│   │   │   │   ├── README.md
+│   │   │   │   └── UtilityRatesService.cs
+│   │   │   └── Warehouses/
+│   │   │       ├── README.md
+│   │   │       └── WarehousesService.cs
+│   │   ├── Mapping/
+│   │   │   └── MappingProfile.cs
+│   │   └── DependencyInjection.cs
+│   ├── Domain/
+│   │   ├── Common/
+│   │   │   ├── Constants/
+│   │   │   │   └── SystemConstants.cs
+│   │   │   ├── Entities/
+│   │   │   │   ├── AggregateRoot.cs
+│   │   │   │   ├── AuditableEntity.cs
+│   │   │   │   └── BaseEntity.cs
+│   │   │   ├── Events/
+│   │   │   │   ├── .gitkeep
+│   │   │   │   ├── DomainEvent.cs
+│   │   │   │   └── IDomainEvent.cs
+│   │   │   ├── Exceptions/
+│   │   │   │   └── DomainException.cs
+│   │   │   ├── Guards/
+│   │   │   │   └── Guard.cs
+│   │   │   ├── Interfaces/
+│   │   │   │   ├── ICatalogEntity.cs
+│   │   │   │   └── IOperationalRecord.cs
+│   │   │   └── ValueObjects/
+│   │   │       ├── Address.cs
+│   │   │       ├── DateRange.cs
+│   │   │       └── Money.cs
+│   │   └── Modules/
+│   │       ├── Administration/
+│   │       │   └── Entities/
+│   │       │       ├── AuditLog.cs
+│   │       │       ├── FeatureFlag.cs
+│   │       │       └── SystemSetting.cs
+│   │       ├── Billing/
+│   │       │   ├── Entities/
+│   │       │   │   ├── Deposit.cs
+│   │       │   │   ├── Discount.cs
+│   │       │   │   ├── Folio.cs
+│   │       │   │   ├── FolioCharge.cs
+│   │       │   │   ├── Invoice.cs
+│   │       │   │   ├── InvoiceItem.cs
+│   │       │   │   ├── Refund.cs
+│   │       │   │   └── TaxRate.cs
+│   │       │   └── Enums/
+│   │       │       └── InvoiceStatus.cs
+│   │       ├── FrontDesk/
+│   │       │   └── Entities/
+│   │       │       ├── CheckInRecord.cs
+│   │       │       ├── CheckOutRecord.cs
+│   │       │       ├── RoomAssignment.cs
+│   │       │       ├── RoomChange.cs
+│   │       │       └── StayExtension.cs
+│   │       ├── Guests/
+│   │       │   └── Entities/
+│   │       │       ├── Guest.cs
+│   │       │       ├── GuestDocument.cs
+│   │       │       └── GuestPreference.cs
+│   │       ├── Hotels/
+│   │       │   └── Entities/
+│   │       │       ├── Building.cs
+│   │       │       ├── Floor.cs
+│   │       │       ├── Hotel.cs
+│   │       │       └── HotelBranch.cs
+│   │       ├── Housekeeping/
+│   │       │   ├── Entities/
+│   │       │   │   ├── HousekeepingTask.cs
+│   │       │   │   └── RoomInspection.cs
+│   │       │   └── Enums/
+│   │       │       └── HousekeepingTaskStatus.cs
+│   │       ├── HumanResources/
+│   │       │   ├── Entities/
+│   │       │   │   ├── AttendanceRecord.cs
+│   │       │   │   ├── Department.cs
+│   │       │   │   ├── Employee.cs
+│   │       │   │   ├── LeaveRequest.cs
+│   │       │   │   ├── Position.cs
+│   │       │   │   └── Shift.cs
+│   │       │   └── Enums/
+│   │       │       └── LeaveStatus.cs
+│   │       ├── Identity/
+│   │       │   ├── Constants/
+│   │       │   │   ├── Permissions.cs
+│   │       │   │   └── SystemRoles.cs
+│   │       │   └── Entities/
+│   │       │       ├── Permission.cs
+│   │       │       ├── RefreshToken.cs
+│   │       │       ├── Role.cs
+│   │       │       ├── RolePermission.cs
+│   │       │       ├── User.cs
+│   │       │       └── UserRole.cs
+│   │       ├── Inventory/
+│   │       │   └── Entities/
+│   │       │       ├── InventoryItem.cs
+│   │       │       ├── StockTransaction.cs
+│   │       │       └── Warehouse.cs
+│   │       ├── Laundry/
+│   │       │   └── Entities/
+│   │       │       └── LaundryRequest.cs
+│   │       ├── Maintenance/
+│   │       │   ├── Entities/
+│   │       │   │   └── MaintenanceRequest.cs
+│   │       │   └── Enums/
+│   │       │       └── MaintenanceStatus.cs
+│   │       ├── Notifications/
+│   │       │   └── Entities/
+│   │       │       └── Notification.cs
+│   │       ├── Payments/
+│   │       │   ├── Entities/
+│   │       │   │   └── Payment.cs
+│   │       │   └── Enums/
+│   │       │       └── PaymentMethod.cs
+│   │       ├── Platform/
+│   │       │   └── Entities/
+│   │       │       └── PlatformTenant.cs
+│   │       ├── Purchasing/
+│   │       │   ├── Entities/
+│   │       │   │   ├── GoodsReceipt.cs
+│   │       │   │   ├── PurchaseOrder.cs
+│   │       │   │   ├── PurchaseRequest.cs
+│   │       │   │   └── Supplier.cs
+│   │       │   └── Enums/
+│   │       │       └── PurchaseStatus.cs
+│   │       ├── Rates/
+│   │       │   └── Entities/
+│   │       │       └── RatePlan.cs
+│   │       ├── Reporting/
+│   │       │   └── ReportingModule.cs
+│   │       ├── Reservations/
+│   │       │   ├── Entities/
+│   │       │   │   └── Reservation.cs
+│   │       │   └── Enums/
+│   │       │       └── ReservationStatus.cs
+│   │       ├── Restaurant/
+│   │       │   └── Entities/
+│   │       │       ├── MenuCategory.cs
+│   │       │       ├── MenuItem.cs
+│   │       │       ├── RestaurantOrder.cs
+│   │       │       └── RestaurantOrderItem.cs
+│   │       ├── Rooms/
+│   │       │   ├── Entities/
+│   │       │   │   ├── Amenity.cs
+│   │       │   │   ├── Room.cs
+│   │       │   │   └── RoomType.cs
+│   │       │   └── Enums/
+│   │       │       └── RoomStatus.cs
+│   │       ├── Security/
+│   │       │   └── Entities/
+│   │       │       └── SecurityIncident.cs
+│   │       ├── Services/
+│   │       │   └── Entities/
+│   │       │       ├── Complaint.cs
+│   │       │       ├── GuestRequest.cs
+│   │       │       ├── HotelService.cs
+│   │       │       └── LostAndFoundItem.cs
+│   │       ├── Transportation/
+│   │       │   └── Entities/
+│   │       │       └── TransportRequest.cs
+│   │       └── Utilities/
+│   │           ├── Entities/
+│   │           │   ├── MeterReading.cs
+│   │           │   ├── UtilityMeter.cs
+│   │           │   └── UtilityRate.cs
+│   │           └── Enums/
+│   │               └── UtilityType.cs
+│   ├── Infrastructure/
+│   │   ├── Authentication/
+│   │   │   ├── JwtOptions.cs
+│   │   │   ├── JwtTokenService.cs
+│   │   │   ├── PasswordHasher.cs
+│   │   │   └── RefreshTokenService.cs
+│   │   ├── Authorization/
+│   │   │   ├── PermissionAuthorizationHandler.cs
+│   │   │   ├── PermissionPolicyProvider.cs
+│   │   │   └── PermissionRequirement.cs
+│   │   ├── Caching/
+│   │   │   └── MemoryCacheService.cs
+│   │   ├── DateTime/
+│   │   │   └── SystemClock.cs
+│   │   ├── Email/
+│   │   │   ├── .gitkeep
+│   │   │   └── ConsoleEmailSender.cs
+│   │   ├── FileStorage/
+│   │   │   ├── .gitkeep
+│   │   │   └── LocalFileStorage.cs
+│   │   ├── Integrations/
+│   │   │   └── IntegrationRegistry.cs
+│   │   ├── Logging/
+│   │   │   └── LoggingMarker.cs
+│   │   ├── Notifications/
+│   │   │   └── NotificationPublisher.cs
+│   │   ├── Payments/
+│   │   │   └── ManualPaymentGateway.cs
+│   │   ├── Pdf/
+│   │   │   ├── .gitkeep
+│   │   │   ├── InvoicePdfGenerator.cs
+│   │   │   ├── ReceiptPdfGenerator.cs
+│   │   │   └── SimplePdfWriter.cs
+│   │   ├── Security/
+│   │   │   └── CurrentUser.cs
+│   │   ├── Sms/
+│   │   │   ├── .gitkeep
+│   │   │   └── ConsoleSmsSender.cs
+│   │   └── DependencyInjection.cs
+│   ├── Persistence/
+│   │   ├── Configurations/
+│   │   │   ├── Administration/
+│   │   │   │   └── AdministrationConfigurationMarker.cs
+│   │   │   ├── Billing/
+│   │   │   │   └── BillingConfigurationMarker.cs
+│   │   │   ├── FrontDesk/
+│   │   │   │   └── FrontDeskConfigurationMarker.cs
+│   │   │   ├── Guests/
+│   │   │   │   └── GuestsConfigurationMarker.cs
+│   │   │   ├── Hotels/
+│   │   │   │   └── HotelsConfigurationMarker.cs
+│   │   │   ├── Housekeeping/
+│   │   │   │   └── HousekeepingConfigurationMarker.cs
+│   │   │   ├── HumanResources/
+│   │   │   │   └── HumanResourcesConfigurationMarker.cs
+│   │   │   ├── Identity/
+│   │   │   │   └── IdentityConfigurationMarker.cs
+│   │   │   ├── Inventory/
+│   │   │   │   └── InventoryConfigurationMarker.cs
+│   │   │   ├── Laundry/
+│   │   │   │   └── LaundryConfigurationMarker.cs
+│   │   │   ├── Maintenance/
+│   │   │   │   └── MaintenanceConfigurationMarker.cs
+│   │   │   ├── Notifications/
+│   │   │   │   └── NotificationsConfigurationMarker.cs
+│   │   │   ├── Payments/
+│   │   │   │   └── PaymentsConfigurationMarker.cs
+│   │   │   ├── Platform/
+│   │   │   │   └── PlatformConfigurationMarker.cs
+│   │   │   ├── Purchasing/
+│   │   │   │   └── PurchasingConfigurationMarker.cs
+│   │   │   ├── Rates/
+│   │   │   │   └── RatesConfigurationMarker.cs
+│   │   │   ├── Reservations/
+│   │   │   │   └── ReservationsConfigurationMarker.cs
+│   │   │   ├── Restaurant/
+│   │   │   │   └── RestaurantConfigurationMarker.cs
+│   │   │   ├── Rooms/
+│   │   │   │   └── RoomsConfigurationMarker.cs
+│   │   │   ├── Security/
+│   │   │   │   └── SecurityConfigurationMarker.cs
+│   │   │   ├── Services/
+│   │   │   │   └── ServicesConfigurationMarker.cs
+│   │   │   ├── Transportation/
+│   │   │   │   └── TransportationConfigurationMarker.cs
+│   │   │   ├── Utilities/
+│   │   │   │   └── UtilitiesConfigurationMarker.cs
+│   │   │   ├── BusinessConfiguration.cs
+│   │   │   ├── HotelRoomConfiguration.cs
+│   │   │   └── IdentityConfiguration.cs
+│   │   ├── Context/
+│   │   │   ├── ApplicationDbContext.cs
+│   │   │   └── ApplicationDbContextFactory.cs
+│   │   ├── Interceptors/
+│   │   │   ├── AuditableEntityInterceptor.cs
+│   │   │   ├── DomainEventInterceptor.cs
+│   │   │   └── SoftDeleteInterceptor.cs
+│   │   ├── Migrations/
+│   │   │   └── .gitkeep
+│   │   ├── Repositories/
+│   │   │   └── Repository.cs
+│   │   ├── Seeders/
+│   │   │   ├── AdminSeeder.cs
+│   │   │   ├── DatabaseSeeder.cs
+│   │   │   ├── PermissionSeeder.cs
+│   │   │   ├── RoleSeeder.cs
+│   │   │   └── SystemDataSeeder.cs
+│   │   └── DependencyInjection.cs
+│   └── Worker/
+│       ├── Jobs/
+│       │   ├── BackupJob.cs
+│       │   ├── DailyRevenueJob.cs
+│       │   ├── EmailDeliveryJob.cs
+│       │   ├── InvoiceOverdueJob.cs
+│       │   ├── NoShowProcessingJob.cs
+│       │   ├── ReservationReminderJob.cs
+│       │   ├── SmsDeliveryJob.cs
+│       │   └── UtilityBillingJob.cs
+│       ├── Services/
+│       │   └── BackgroundJobState.cs
+│       └── DependencyInjection.cs
+├── tests/
+│   ├── Api/
+│   │   └── .gitkeep
+│   ├── Application/
+│   │   ├── .gitkeep
+│   │   └── TEST_PLAN.md
+│   ├── Domain/
+│   │   ├── .gitkeep
+│   │   └── TEST_PLAN.md
+│   ├── Integration/
+│   │   ├── .gitkeep
+│   │   └── TEST_PLAN.md
+│   ├── Persistence/
+│   └── README.md
+├── .dockerignore
+├── .gitignore
+├── appsettings.Development.json
+├── appsettings.json
+├── HotelManagement.csproj
+├── HotelManagement.sln
+├── Program.cs
+├── PROJECT_STRUCTURE.txt
+└── README.md

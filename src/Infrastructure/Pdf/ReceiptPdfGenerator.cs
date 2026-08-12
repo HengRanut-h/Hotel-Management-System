@@ -1,0 +1,1 @@
+namespace HotelManagement.Infrastructure.Pdf; public sealed class ReceiptPdfGenerator{public byte[] Generate(string receiptNumber,decimal amount,string method)=>SimplePdfWriter.Create("Hotel Management Receipt",$"Receipt: {receiptNumber}",$"Amount: {amount:0.00}",$"Method: {method}");}

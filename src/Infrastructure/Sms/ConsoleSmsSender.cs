@@ -1,0 +1,1 @@
+using HotelManagement.Application.Abstractions.Sms; namespace HotelManagement.Infrastructure.Sms; public sealed class ConsoleSmsSender(ILogger<ConsoleSmsSender> log):ISmsSender{public Task SendAsync(string to,string message,CancellationToken ct=default){log.LogInformation("SMS to {To}: {Message}",to,message);return Task.CompletedTask;}}

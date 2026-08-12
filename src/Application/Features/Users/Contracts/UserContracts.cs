@@ -1,0 +1,5 @@
+using System.ComponentModel.DataAnnotations; namespace HotelManagement.Application.Features.Users.Contracts;
+public sealed class CreateUserRequest{[Required,MaxLength(200)]public string FullName{get;set;}=string.Empty;[Required,EmailAddress,MaxLength(200)]public string Email{get;set;}=string.Empty;[Required,MinLength(8),MaxLength(200)]public string Password{get;set;}=string.Empty;[Required]public List<string> RoleNames{get;set;}=[];public Guid? BranchId{get;set;}}
+public sealed class UpdateUserRequest{[Required,MaxLength(200)]public string FullName{get;set;}=string.Empty;[Required,EmailAddress,MaxLength(200)]public string Email{get;set;}=string.Empty;public Guid? BranchId{get;set;}public bool IsActive{get;set;}=true;public List<string> RoleNames{get;set;}=[];}
+public sealed class ResetUserPasswordRequest{[Required,MinLength(8),MaxLength(200)]public string Password{get;set;}=string.Empty;}
+public sealed class UserResponse{public Guid Id{get;set;}public string FullName{get;set;}=string.Empty;public string Email{get;set;}=string.Empty;public bool IsActive{get;set;}public Guid? HotelId{get;set;}public Guid? BranchId{get;set;}public List<string>Roles{get;set;}=[];}
