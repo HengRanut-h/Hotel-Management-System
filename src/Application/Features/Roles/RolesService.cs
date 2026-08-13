@@ -49,7 +49,8 @@ public sealed class RolesService(
                     cancellationToken);
 
         return roles
-            .Select(Map)
+            .Select(
+                Map)
             .ToList();
     }
 
@@ -94,20 +95,34 @@ public sealed class RolesService(
         RoleRequest request,
         CancellationToken cancellationToken)
     {
-        var normalizedName =
+        var name =
             request.Name
-                .Trim()
+                .Trim();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                name))
+        {
+            throw new ArgumentException(
+                "Role name is required.",
+                nameof(request));
+        }
+
+        var normalizedName =
+            name
                 .ToUpperInvariant();
 
         var roleExists =
-            await db.Roles.AnyAsync(
-                role =>
-                    role.NormalizedName == normalizedName
-                    &&
-                    !role.IsDeleted,
-                cancellationToken);
+            await db.Roles
+                .AnyAsync(
+                    role =>
+                        role.NormalizedName == normalizedName
+                        &&
+                        !role.IsDeleted,
+                    cancellationToken);
 
-        if (roleExists)
+        if (
+            roleExists)
         {
             throw new ConflictException(
                 "Role already exists.");
@@ -115,7 +130,7 @@ public sealed class RolesService(
 
         var role =
             new Role(
-                request.Name.Trim());
+                name);
 
         db.Roles.Add(
             role);
@@ -148,29 +163,43 @@ public sealed class RolesService(
             ?? throw new NotFoundException(
                 "Role not found.");
 
-        var normalizedName =
+        var name =
             request.Name
-                .Trim()
+                .Trim();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                name))
+        {
+            throw new ArgumentException(
+                "Role name is required.",
+                nameof(request));
+        }
+
+        var normalizedName =
+            name
                 .ToUpperInvariant();
 
         var duplicateExists =
-            await db.Roles.AnyAsync(
-                existingRole =>
-                    existingRole.Id != id
-                    &&
-                    existingRole.NormalizedName == normalizedName
-                    &&
-                    !existingRole.IsDeleted,
-                cancellationToken);
+            await db.Roles
+                .AnyAsync(
+                    existingRole =>
+                        existingRole.Id != id
+                        &&
+                        existingRole.NormalizedName == normalizedName
+                        &&
+                        !existingRole.IsDeleted,
+                    cancellationToken);
 
-        if (duplicateExists)
+        if (
+            duplicateExists)
         {
             throw new ConflictException(
                 "Role already exists.");
         }
 
         role.Update(
-            request.Name.Trim());
+            name);
 
         await db.SaveChangesAsync(
             cancellationToken);
@@ -182,14 +211,27 @@ public sealed class RolesService(
 
     // =========================================================
     // DELETE
+    //
+    // Role with permissions:
+    // ALLOWED
+    //
+    // Role assigned to users:
+    // BLOCKED
     // =========================================================
 
     public async Task DeleteAsync(
         Guid id,
         CancellationToken cancellationToken)
     {
+        // =====================================================
+        // LOAD ROLE RELATIONSHIPS
+        // =====================================================
+
         var role =
             await db.Roles
+                .Include(
+                    role =>
+                        role.RolePermissions)
                 .Include(
                     role =>
                         role.UserRoles)
@@ -202,11 +244,36 @@ public sealed class RolesService(
             ?? throw new NotFoundException(
                 "Role not found.");
 
-        if (role.UserRoles.Count > 0)
+        // =====================================================
+        // DON'T DELETE ROLE ASSIGNED TO USERS
+        // =====================================================
+
+        if (
+            role.UserRoles.Count > 0)
         {
             throw new ConflictException(
-                "Cannot delete a role that is assigned to users.");
+                "Cannot delete a role that is assigned to users. " +
+                "Remove the role from all users first.");
         }
+
+        // =====================================================
+        // REMOVE ROLE PERMISSIONS
+        //
+        // A role may be deleted even when it currently has
+        // permissions assigned.
+        // =====================================================
+
+        if (
+            role.RolePermissions.Count > 0)
+        {
+            db.RolePermissions
+                .RemoveRange(
+                    role.RolePermissions);
+        }
+
+        // =====================================================
+        // SOFT DELETE ROLE
+        // =====================================================
 
         role.SoftDelete();
 
@@ -241,7 +308,8 @@ public sealed class RolesService(
             request.Permissions
                 .Where(
                     permission =>
-                        !string.IsNullOrWhiteSpace(permission))
+                        !string.IsNullOrWhiteSpace(
+                            permission))
                 .Select(
                     permission =>
                         permission.Trim())
@@ -269,25 +337,41 @@ public sealed class RolesService(
                     StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-        if (missingPermissions.Count > 0)
+        if (
+            missingPermissions.Count > 0)
         {
             throw new ConflictException(
                 "Unknown permissions: "
-                + string.Join(
+                +
+                string.Join(
                     ", ",
                     missingPermissions));
         }
 
-        db.RolePermissions.RemoveRange(
-            role.RolePermissions);
+        // =====================================================
+        // REMOVE OLD PERMISSIONS
+        // =====================================================
 
-        foreach (var permission in permissions)
+        db.RolePermissions
+            .RemoveRange(
+                role.RolePermissions);
+
+        // =====================================================
+        // ADD NEW PERMISSIONS
+        // =====================================================
+
+        foreach (
+            var permission
+            in permissions)
         {
             db.RolePermissions.Add(
                 new RolePermission
                 {
-                    RoleId = role.Id,
-                    PermissionId = permission.Id
+                    RoleId =
+                        role.Id,
+
+                    PermissionId =
+                        permission.Id
                 });
         }
 
@@ -300,8 +384,9 @@ public sealed class RolesService(
     // =========================================================
 
     private static RoleResponse Map(
-        Role role) =>
-        new(
+        Role role)
+    {
+        return new RoleResponse(
             role.Id,
             role.Name,
             role.RolePermissions
@@ -311,4 +396,5 @@ public sealed class RolesService(
                 .Order()
                 .ToList(),
             role.UserRoles.Count);
+    }
 }

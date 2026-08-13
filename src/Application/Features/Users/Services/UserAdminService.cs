@@ -1,7 +1,9 @@
 using HotelManagement.Application.Abstractions.Persistence;
 using HotelManagement.Application.Common.Exceptions;
+using HotelManagement.Application.Common.Security;
 using HotelManagement.Application.Features.Users.Contracts;
 using HotelManagement.Domain.Modules.Identity.Entities;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,14 +15,27 @@ public sealed class UserAdminService(
 {
     // =========================================================
     // GET ALL
+    //
+    // Security:
+    //
+    // Permission is checked by Controller.
+    //
+    // Here:
+    // 1. Hotel scope
+    // 2. Exclude current user
+    // 3. Role hierarchy
+    // 4. Portal/domain hierarchy
     // =========================================================
 
-    public async Task<List<UserResponse>> GetAllAsync(
-        Guid hotelId,
-        CancellationToken cancellationToken)
+    public async Task<List<UserResponse>>
+        GetAllAsync(
+            Guid? hotelId,
+            IReadOnlyCollection<string> actorRoles,
+            Guid? actorUserId,
+            CancellationToken cancellationToken)
     {
-        var users =
-            await db.Users
+        IQueryable<User> query =
+            db.Users
                 .AsNoTracking()
                 .Include(
                     user =>
@@ -30,9 +45,25 @@ public sealed class UserAdminService(
                         userRole.Role)
                 .Where(
                     user =>
-                        user.HotelId == hotelId
-                        &&
-                        !user.IsDeleted)
+                        !user.IsDeleted);
+
+        query =
+            ApplyHotelScope(
+                query,
+                hotelId,
+                actorRoles);
+
+        if (actorUserId.HasValue)
+        {
+            query =
+                query.Where(
+                    user =>
+                        user.Id !=
+                        actorUserId.Value);
+        }
+
+        var users =
+            await query
                 .OrderBy(
                     user =>
                         user.FullName)
@@ -40,7 +71,47 @@ public sealed class UserAdminService(
                     cancellationToken);
 
         return users
+            .Where(
+                user =>
+                    RoleAccessPolicy
+                        .CanManageUser(
+                            actorRoles,
+                            GetRoleNames(user)))
             .Select(Map)
+            .ToList();
+    }
+
+    // =========================================================
+    // ASSIGNABLE ROLES
+    // =========================================================
+
+    public async Task<List<string>>
+        GetAssignableRolesAsync(
+            IReadOnlyCollection<string> actorRoles,
+            CancellationToken cancellationToken)
+    {
+        var roles =
+            await db.Roles
+                .AsNoTracking()
+                .Where(
+                    role =>
+                        !role.IsDeleted)
+                .OrderBy(
+                    role =>
+                        role.Name)
+                .Select(
+                    role =>
+                        role.Name)
+                .ToListAsync(
+                    cancellationToken);
+
+        return roles
+            .Where(
+                roleName =>
+                    RoleAccessPolicy
+                        .CanAssignRoles(
+                            actorRoles,
+                            [roleName]))
             .ToList();
     }
 
@@ -48,13 +119,16 @@ public sealed class UserAdminService(
     // GET BY ID
     // =========================================================
 
-    public async Task<UserResponse> GetByIdAsync(
-        Guid hotelId,
-        Guid id,
-        CancellationToken cancellationToken)
+    public async Task<UserResponse>
+        GetByIdAsync(
+            Guid? hotelId,
+            IReadOnlyCollection<string> actorRoles,
+            Guid? actorUserId,
+            Guid id,
+            CancellationToken cancellationToken)
     {
-        var user =
-            await db.Users
+        IQueryable<User> query =
+            db.Users
                 .AsNoTracking()
                 .Include(
                     user =>
@@ -62,16 +136,29 @@ public sealed class UserAdminService(
                 .ThenInclude(
                     userRole =>
                         userRole.Role)
-                .FirstOrDefaultAsync(
+                .Where(
                     user =>
-                        user.HotelId == hotelId
-                        &&
                         user.Id == id
                         &&
-                        !user.IsDeleted,
+                        !user.IsDeleted);
+
+        query =
+            ApplyHotelScope(
+                query,
+                hotelId,
+                actorRoles);
+
+        var user =
+            await query
+                .FirstOrDefaultAsync(
                     cancellationToken)
             ?? throw new NotFoundException(
                 "User not found.");
+
+        EnsureCanManageTarget(
+            actorRoles,
+            actorUserId,
+            user);
 
         return Map(
             user);
@@ -81,15 +168,21 @@ public sealed class UserAdminService(
     // CREATE
     // =========================================================
 
-    public async Task<UserResponse> CreateAsync(
-        Guid hotelId,
-        Guid branchId,
-        CreateUserRequest request,
-        CancellationToken cancellationToken)
+    public async Task<UserResponse>
+        CreateAsync(
+            Guid hotelId,
+            Guid branchId,
+            IReadOnlyCollection<string> actorRoles,
+            CreateUserRequest request,
+            CancellationToken cancellationToken)
     {
         var email =
             NormalizeEmail(
                 request.Email);
+
+        // =====================================================
+        // EMAIL
+        // =====================================================
 
         var emailExists =
             await db.Users
@@ -105,10 +198,28 @@ public sealed class UserAdminService(
                 "Email already exists.");
         }
 
+        // =====================================================
+        // ROLES
+        // =====================================================
+
         var roles =
             await ResolveRolesAsync(
                 request.RoleNames,
                 cancellationToken);
+
+        if (roles.Count == 0)
+        {
+            throw new ConflictException(
+                "At least one role is required.");
+        }
+
+        EnsureCanAssignRoles(
+            actorRoles,
+            roles);
+
+        // =====================================================
+        // CREATE USER
+        // =====================================================
 
         var user =
             new User(
@@ -118,7 +229,8 @@ public sealed class UserAdminService(
         user.SetScope(
             hotelId,
             request.BranchId
-            ?? branchId);
+            ??
+            branchId);
 
         user.SetPasswordHash(
             passwordHasher.HashPassword(
@@ -131,50 +243,100 @@ public sealed class UserAdminService(
         await db.SaveChangesAsync(
             cancellationToken);
 
-        foreach (var role in roles)
+        // =====================================================
+        // USER ROLES
+        // =====================================================
+
+        foreach (
+            var role in roles)
         {
             db.UserRoles.Add(
                 new UserRole
                 {
-                    UserId = user.Id,
-                    RoleId = role.Id
+                    UserId =
+                        user.Id,
+
+                    RoleId =
+                        role.Id
                 });
         }
 
         await db.SaveChangesAsync(
             cancellationToken);
 
-        return await GetByIdAsync(
-            hotelId,
-            user.Id,
-            cancellationToken);
+        // We know the actor can assign these roles,
+        // so map directly after loading relationships.
+        var created =
+            await db.Users
+                .AsNoTracking()
+                .Include(
+                    item =>
+                        item.UserRoles)
+                .ThenInclude(
+                    userRole =>
+                        userRole.Role)
+                .FirstAsync(
+                    item =>
+                        item.Id ==
+                        user.Id,
+                    cancellationToken);
+
+        return Map(
+            created);
     }
 
     // =========================================================
     // UPDATE
     // =========================================================
 
-    public async Task<UserResponse> UpdateAsync(
-        Guid hotelId,
-        Guid id,
-        UpdateUserRequest request,
-        CancellationToken cancellationToken)
+    public async Task<UserResponse>
+        UpdateAsync(
+            Guid? hotelId,
+            IReadOnlyCollection<string> actorRoles,
+            Guid? actorUserId,
+            Guid id,
+            UpdateUserRequest request,
+            CancellationToken cancellationToken)
     {
-        var user =
-            await db.Users
+        IQueryable<User> query =
+            db.Users
                 .Include(
                     user =>
                         user.UserRoles)
-                .FirstOrDefaultAsync(
+                .ThenInclude(
+                    userRole =>
+                        userRole.Role)
+                .Where(
                     user =>
-                        user.HotelId == hotelId
-                        &&
                         user.Id == id
                         &&
-                        !user.IsDeleted,
+                        !user.IsDeleted);
+
+        query =
+            ApplyHotelScope(
+                query,
+                hotelId,
+                actorRoles);
+
+        var user =
+            await query
+                .FirstOrDefaultAsync(
                     cancellationToken)
             ?? throw new NotFoundException(
                 "User not found.");
+
+        // =====================================================
+        // TARGET SECURITY
+        // =====================================================
+
+        EnsureCanManageTarget(
+            actorRoles,
+            actorUserId,
+            user);
+
+        // =====================================================
+        // EMAIL
+        // =====================================================
 
         var email =
             NormalizeEmail(
@@ -187,7 +349,8 @@ public sealed class UserAdminService(
                     existingUser =>
                         existingUser.Id != id
                         &&
-                        existingUser.Email == email,
+                        existingUser.Email ==
+                        email,
                     cancellationToken);
 
         if (emailExists)
@@ -196,18 +359,44 @@ public sealed class UserAdminService(
                 "Email already exists.");
         }
 
+        // =====================================================
+        // NEW ROLES
+        // =====================================================
+
         var roles =
             await ResolveRolesAsync(
                 request.RoleNames,
                 cancellationToken);
 
+        if (roles.Count == 0)
+        {
+            throw new ConflictException(
+                "At least one role is required.");
+        }
+
+        EnsureCanAssignRoles(
+            actorRoles,
+            roles);
+
+        // =====================================================
+        // PROFILE
+        // =====================================================
+
         user.UpdateProfile(
             request.FullName.Trim(),
             email);
 
-        user.SetScope(
-            hotelId,
-            request.BranchId);
+        // Preserve current HotelId.
+        if (user.HotelId.HasValue)
+        {
+            user.SetScope(
+                user.HotelId.Value,
+                request.BranchId);
+        }
+
+        // =====================================================
+        // STATUS
+        // =====================================================
 
         if (request.IsActive)
         {
@@ -218,26 +407,46 @@ public sealed class UserAdminService(
             user.Disable();
         }
 
+        // =====================================================
+        // REPLACE ROLES
+        // =====================================================
+
         db.UserRoles.RemoveRange(
             user.UserRoles);
 
-        foreach (var role in roles)
+        foreach (
+            var role in roles)
         {
             db.UserRoles.Add(
                 new UserRole
                 {
-                    UserId = user.Id,
-                    RoleId = role.Id
+                    UserId =
+                        user.Id,
+
+                    RoleId =
+                        role.Id
                 });
         }
 
         await db.SaveChangesAsync(
             cancellationToken);
 
-        return await GetByIdAsync(
-            hotelId,
-            id,
-            cancellationToken);
+        var updated =
+            await db.Users
+                .AsNoTracking()
+                .Include(
+                    item =>
+                        item.UserRoles)
+                .ThenInclude(
+                    userRole =>
+                        userRole.Role)
+                .FirstAsync(
+                    item =>
+                        item.Id == id,
+                    cancellationToken);
+
+        return Map(
+            updated);
     }
 
     // =========================================================
@@ -245,23 +454,44 @@ public sealed class UserAdminService(
     // =========================================================
 
     public async Task SetActiveAsync(
-        Guid hotelId,
+        Guid? hotelId,
+        IReadOnlyCollection<string> actorRoles,
+        Guid? actorUserId,
         Guid id,
         bool isActive,
         CancellationToken cancellationToken)
     {
-        var user =
-            await db.Users
-                .FirstOrDefaultAsync(
+        IQueryable<User> query =
+            db.Users
+                .Include(
                     user =>
-                        user.HotelId == hotelId
-                        &&
+                        user.UserRoles)
+                .ThenInclude(
+                    userRole =>
+                        userRole.Role)
+                .Where(
+                    user =>
                         user.Id == id
                         &&
-                        !user.IsDeleted,
+                        !user.IsDeleted);
+
+        query =
+            ApplyHotelScope(
+                query,
+                hotelId,
+                actorRoles);
+
+        var user =
+            await query
+                .FirstOrDefaultAsync(
                     cancellationToken)
             ?? throw new NotFoundException(
                 "User not found.");
+
+        EnsureCanManageTarget(
+            actorRoles,
+            actorUserId,
+            user);
 
         if (isActive)
         {
@@ -277,43 +507,51 @@ public sealed class UserAdminService(
     }
 
     // =========================================================
-    // DISABLE
-    // =========================================================
-
-    public Task DisableAsync(
-        Guid hotelId,
-        Guid id,
-        CancellationToken cancellationToken) =>
-        SetActiveAsync(
-            hotelId,
-            id,
-            false,
-            cancellationToken);
-
-    // =========================================================
     // RESET PASSWORD
     // =========================================================
 
     public async Task ResetPasswordAsync(
-        Guid hotelId,
+        Guid? hotelId,
+        IReadOnlyCollection<string> actorRoles,
+        Guid? actorUserId,
         Guid id,
         string password,
         CancellationToken cancellationToken)
     {
-        var user =
-            await db.Users
-                .FirstOrDefaultAsync(
+        IQueryable<User> query =
+            db.Users
+                .Include(
                     user =>
-                        user.HotelId == hotelId
-                        &&
+                        user.UserRoles)
+                .ThenInclude(
+                    userRole =>
+                        userRole.Role)
+                .Where(
+                    user =>
                         user.Id == id
                         &&
-                        !user.IsDeleted,
+                        !user.IsDeleted);
+
+        query =
+            ApplyHotelScope(
+                query,
+                hotelId,
+                actorRoles);
+
+        var user =
+            await query
+                .FirstOrDefaultAsync(
                     cancellationToken)
             ?? throw new NotFoundException(
                 "User not found.");
 
-        if (string.IsNullOrWhiteSpace(password))
+        EnsureCanManageTarget(
+            actorRoles,
+            actorUserId,
+            user);
+
+        if (string.IsNullOrWhiteSpace(
+                password))
         {
             throw new ConflictException(
                 "Password is required.");
@@ -329,26 +567,47 @@ public sealed class UserAdminService(
     }
 
     // =========================================================
-    // SOFT DELETE
+    // DELETE
     // =========================================================
 
     public async Task DeleteAsync(
-        Guid hotelId,
+        Guid? hotelId,
+        IReadOnlyCollection<string> actorRoles,
+        Guid? actorUserId,
         Guid id,
         CancellationToken cancellationToken)
     {
-        var user =
-            await db.Users
-                .FirstOrDefaultAsync(
+        IQueryable<User> query =
+            db.Users
+                .Include(
                     user =>
-                        user.HotelId == hotelId
-                        &&
+                        user.UserRoles)
+                .ThenInclude(
+                    userRole =>
+                        userRole.Role)
+                .Where(
+                    user =>
                         user.Id == id
                         &&
-                        !user.IsDeleted,
+                        !user.IsDeleted);
+
+        query =
+            ApplyHotelScope(
+                query,
+                hotelId,
+                actorRoles);
+
+        var user =
+            await query
+                .FirstOrDefaultAsync(
                     cancellationToken)
             ?? throw new NotFoundException(
                 "User not found.");
+
+        EnsureCanManageTarget(
+            actorRoles,
+            actorUserId,
+            user);
 
         user.SoftDelete();
 
@@ -357,38 +616,110 @@ public sealed class UserAdminService(
     }
 
     // =========================================================
-    // GET AVAILABLE ROLES
+    // HOTEL SCOPE
     // =========================================================
 
-    public Task<List<string>> GetRolesAsync(
-        CancellationToken cancellationToken) =>
-        db.Roles
-            .AsNoTracking()
-            .Where(
-                role =>
-                    !role.IsDeleted)
-            .OrderBy(
-                role =>
-                    role.Name)
-            .Select(
-                role =>
-                    role.Name)
-            .ToListAsync(
-                cancellationToken);
+    private static IQueryable<User>
+        ApplyHotelScope(
+            IQueryable<User> query,
+            Guid? hotelId,
+            IReadOnlyCollection<string> actorRoles)
+    {
+        if (
+            RoleAccessPolicy
+                .IsSuperAdmin(
+                    actorRoles))
+        {
+            return query;
+        }
+
+        if (!hotelId.HasValue)
+        {
+            throw new ForbiddenException(
+                "Hotel context is required.");
+        }
+
+        return query.Where(
+            user =>
+                user.HotelId ==
+                hotelId.Value);
+    }
+
+    // =========================================================
+    // TARGET ACCESS
+    // =========================================================
+
+    private static void
+        EnsureCanManageTarget(
+            IReadOnlyCollection<string> actorRoles,
+            Guid? actorUserId,
+            User target)
+    {
+        // Never manage yourself from admin endpoints.
+        if (
+            actorUserId.HasValue
+            &&
+            target.Id ==
+            actorUserId.Value)
+        {
+            throw new ForbiddenException(
+                "You cannot manage your own account from this administration action.");
+        }
+
+        if (
+            !RoleAccessPolicy
+                .CanManageUser(
+                    actorRoles,
+                    GetRoleNames(
+                        target)))
+        {
+            throw new ForbiddenException(
+                "You are not allowed to manage this user.");
+        }
+    }
+
+    // =========================================================
+    // ASSIGN ROLE SECURITY
+    // =========================================================
+
+    private static void
+        EnsureCanAssignRoles(
+            IReadOnlyCollection<string> actorRoles,
+            IReadOnlyCollection<Role> roles)
+    {
+        var roleNames =
+            roles
+                .Select(
+                    role =>
+                        role.Name)
+                .ToList();
+
+        if (
+            !RoleAccessPolicy
+                .CanAssignRoles(
+                    actorRoles,
+                    roleNames))
+        {
+            throw new ForbiddenException(
+                "You are not allowed to assign one or more of the selected roles.");
+        }
+    }
 
     // =========================================================
     // RESOLVE ROLES
     // =========================================================
 
-    private async Task<List<Role>> ResolveRolesAsync(
-        List<string> roleNames,
-        CancellationToken cancellationToken)
+    private async Task<List<Role>>
+        ResolveRolesAsync(
+            List<string> roleNames,
+            CancellationToken cancellationToken)
     {
         var normalizedNames =
             roleNames
                 .Where(
                     roleName =>
-                        !string.IsNullOrWhiteSpace(roleName))
+                        !string.IsNullOrWhiteSpace(
+                            roleName))
                 .Select(
                     roleName =>
                         roleName
@@ -401,14 +732,17 @@ public sealed class UserAdminService(
             await db.Roles
                 .Where(
                     role =>
-                        normalizedNames.Contains(
-                            role.NormalizedName)
+                        normalizedNames
+                            .Contains(
+                                role.NormalizedName)
                         &&
                         !role.IsDeleted)
                 .ToListAsync(
                     cancellationToken);
 
-        if (roles.Count != normalizedNames.Count)
+        if (
+            roles.Count !=
+            normalizedNames.Count)
         {
             throw new NotFoundException(
                 "One or more roles were not found.");
@@ -418,40 +752,72 @@ public sealed class UserAdminService(
     }
 
     // =========================================================
+    // ROLE NAMES
+    // =========================================================
+
+    private static IReadOnlyCollection<string>
+        GetRoleNames(
+            User user)
+    {
+        return user.UserRoles
+            .Where(
+                userRole =>
+                    userRole.Role is not null
+                    &&
+                    !userRole.Role
+                        .IsDeleted)
+            .Select(
+                userRole =>
+                    userRole.Role.Name)
+            .Distinct(
+                StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    // =========================================================
     // NORMALIZE EMAIL
     // =========================================================
 
     private static string NormalizeEmail(
-        string email) =>
-        email
+        string email)
+    {
+        return email
             .Trim()
             .ToLowerInvariant();
+    }
 
     // =========================================================
-    // MAPPING
+    // MAP
     // =========================================================
 
     private static UserResponse Map(
-        User user) =>
-        new()
+        User user)
+    {
+        return new UserResponse
         {
-            Id = user.Id,
-            FullName = user.FullName,
-            Email = user.Email,
-            IsActive = user.IsActive,
-            HotelId = user.HotelId,
-            BranchId = user.BranchId,
+            Id =
+                user.Id,
+
+            FullName =
+                user.FullName,
+
+            Email =
+                user.Email,
+
+            IsActive =
+                user.IsActive,
+
+            HotelId =
+                user.HotelId,
+
+            BranchId =
+                user.BranchId,
 
             Roles =
-                user.UserRoles
-                    .Where(
-                        userRole =>
-                            !userRole.Role.IsDeleted)
-                    .Select(
-                        userRole =>
-                            userRole.Role.Name)
-                    .Distinct()
+                GetRoleNames(
+                    user)
                     .Order()
                     .ToList()
         };
+    }
 }
