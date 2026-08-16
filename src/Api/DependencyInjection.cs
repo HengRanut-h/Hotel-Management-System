@@ -36,6 +36,10 @@ public static class DependencyInjection
             configuration
                 .GetSection("Cors:AllowedOrigins")
                 .Get<string[]>()
+                ?.Where(origin => !string.IsNullOrWhiteSpace(origin))
+                .Select(origin => origin.Trim().TrimEnd('/'))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray()
             ?? [];
 
         services.AddCors(options =>
@@ -57,7 +61,23 @@ public static class DependencyInjection
                         policy
                             .AllowAnyHeader()
                             .AllowAnyMethod()
-                            .SetIsOriginAllowed(_ => true)
+                            .SetIsOriginAllowed(origin =>
+                            {
+                                if (!Uri.TryCreate(
+                                        origin,
+                                        UriKind.Absolute,
+                                        out var uri))
+                                {
+                                    return false;
+                                }
+
+                                return uri.Host.Equals(
+                                           "localhost",
+                                           StringComparison.OrdinalIgnoreCase) ||
+                                       uri.Host.Equals(
+                                           "127.0.0.1",
+                                           StringComparison.OrdinalIgnoreCase);
+                            })
                             .AllowCredentials();
                     }
                 });
@@ -95,6 +115,12 @@ public static class DependencyInjection
         this WebApplication app)
     {
         // =====================================================
+        // FORWARDED HEADERS
+        // =====================================================
+
+        app.UseForwardedHeaders();
+
+        // =====================================================
         // EXCEPTION HANDLING
         // =====================================================
 
@@ -122,7 +148,10 @@ public static class DependencyInjection
         // SWAGGER
         // =====================================================
 
-        if (app.Environment.IsDevelopment())
+        if (app.Environment.IsDevelopment() ||
+            app.Configuration.GetValue(
+                "Swagger:Enabled",
+                true))
         {
             app.UseSwagger();
 
@@ -141,7 +170,10 @@ public static class DependencyInjection
         // HTTPS REDIRECTION
         // =====================================================
 
-        app.UseHttpsRedirection();
+        if (!app.Environment.IsProduction())
+        {
+            app.UseHttpsRedirection();
+        }
 
         // =====================================================
         // CORS

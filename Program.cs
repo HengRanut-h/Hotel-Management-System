@@ -4,9 +4,26 @@ using HotelManagement.Application;
 using HotelManagement.Infrastructure;
 using HotelManagement.Persistence;
 using HotelManagement.Worker;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder =
     WebApplication.CreateBuilder(args);
+
+// =========================================================
+// CONTAINER / REVERSE PROXY HOSTING
+// =========================================================
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto;
+
+    // Koyeb uses dynamic proxy addresses, so trust forwarded headers
+    // from the hosting platform network.
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // =========================================================
 // CONTROLLERS + JSON OPTIONS

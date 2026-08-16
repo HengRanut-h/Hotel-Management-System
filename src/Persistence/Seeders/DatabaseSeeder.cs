@@ -254,11 +254,28 @@ public static class DatabaseSeeder
             await db.SaveChangesAsync(ct);
         }
 
+        var isProduction =
+            string.Equals(
+                configuration["ASPNETCORE_ENVIRONMENT"],
+                "Production",
+                StringComparison.OrdinalIgnoreCase);
+
+        var configuredAdminEmail =
+            configuration["Seed:AdminEmail"];
+
+        var configuredAdminPassword =
+            configuration["Seed:AdminPassword"];
+
         var adminEmail =
-            (configuration["Seed:AdminEmail"] ??
-             "admin@hotel.local")
+            (configuredAdminEmail ??
+             (isProduction ? string.Empty : "admin@hotel.local"))
             .Trim()
             .ToLowerInvariant();
+
+        if (string.IsNullOrWhiteSpace(adminEmail))
+        {
+            return;
+        }
 
         var admin =
             await db.Users
@@ -269,6 +286,13 @@ public static class DatabaseSeeder
 
         if (admin is null)
         {
+            if (isProduction &&
+                string.IsNullOrWhiteSpace(configuredAdminPassword))
+            {
+                throw new InvalidOperationException(
+                    "Seed:AdminPassword must be provided from a secure environment variable before creating the initial production administrator.");
+            }
+
             admin = new User(
                 configuration["Seed:AdminFullName"] ??
                 "System Administrator",
@@ -279,7 +303,7 @@ public static class DatabaseSeeder
                 branch.Id);
 
             var password =
-                configuration["Seed:AdminPassword"] ??
+                configuredAdminPassword ??
                 "ChangeMe123!";
 
             admin.SetPasswordHash(

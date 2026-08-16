@@ -19,6 +19,20 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException(
                 "ConnectionStrings:DefaultConnection is missing.");
 
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "ConnectionStrings:DefaultConnection is empty.");
+        }
+
+        var configuredServerVersion =
+            configuration["Database:ServerVersion"];
+
+        var serverVersion =
+            string.IsNullOrWhiteSpace(configuredServerVersion)
+                ? ServerVersion.AutoDetect(connectionString)
+                : ServerVersion.Parse(configuredServerVersion);
+
         services.AddScoped<AuditableEntityInterceptor>();
         services.AddScoped<SoftDeleteInterceptor>();
         services.AddScoped<DomainEventInterceptor>();
@@ -27,7 +41,7 @@ public static class DependencyInjection
         {
             options.UseMySql(
                 connectionString,
-                ServerVersion.AutoDetect(connectionString));
+                serverVersion);
 
             options.AddInterceptors(
                 serviceProvider.GetRequiredService<AuditableEntityInterceptor>(),
@@ -45,6 +59,10 @@ public static class DependencyInjection
         this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
+        var logger =
+            scope.ServiceProvider
+                .GetRequiredService<ILogger<ApplicationDbContext>>();
+
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         var migrations = db.Database.GetMigrations().ToList();
@@ -55,8 +73,21 @@ public static class DependencyInjection
             "Database:ApplyMigrationsOnStartup",
             app.Environment.IsDevelopment());
 
+        var pendingMigrations =
+            (await db.Database.GetPendingMigrationsAsync()).ToList();
+
         if (applyMigrations)
+        {
             await db.Database.MigrateAsync();
+        }
+        else if (pendingMigrations.Count > 0)
+        {
+            logger.LogWarning(
+                "Database has {PendingMigrationCount} pending EF Core migrations. Skipping seed data until migrations are applied.",
+                pendingMigrations.Count);
+
+            return;
+        }
 
         if (!await db.Database.CanConnectAsync())
             return;
